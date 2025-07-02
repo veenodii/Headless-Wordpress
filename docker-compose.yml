@@ -78,10 +78,10 @@ services:
       wordpress:
         condition: service_healthy
     networks:
-      - dokploy-network
-      - internal:
-          aliases:
-            - cms.studyfriendly.com
+      dokploy-network: {}
+      internal:
+        aliases:
+          - cms.studyfriendly.com
           
     volumes:
       - wp_data:/var/www/html:ro
