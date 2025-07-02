@@ -94,7 +94,7 @@ services:
       # Define a router and explicitly link it to a service using the 'service' property
       - "traefik.http.routers.wordpress-router.rule=Host(`${FQDN}`)"
       - "traefik.http.routers.wordpress-router.entrypoints=websecure"
-      - "traefik.http.routers.wordpress-router.tls.certresolver=le"
+      - "traefik.http.routers.wordpress-router.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wordpress-router.service=wordpress-service" # Explicitly link to the service below
 
       # Define the service and tell Traefik where to forward the traffic
