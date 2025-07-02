@@ -48,8 +48,7 @@ services:
     networks:
       - internal
     volumes:
-      - wp_data:/var/www/html      
-      - ./wordpress/conf/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini
+      - wp_data:/var/www/html
     environment:
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}

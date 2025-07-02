@@ -63,4 +63,10 @@ ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Expose the PHP-FPM port
 EXPOSE 9000
-CMD ["php-fpm"]
+
+# Show OPcache status at container start (for debugging)
+RUN echo '#!/bin/sh\nphp -i | grep -i opcache\nphp -m | grep -i opcache\nphp -r "print_r(opcache_get_status());"\nexec php-fpm' > /usr/local/bin/docker-entrypoint-opcache.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint-opcache.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint-opcache.sh"]
+CMD []
