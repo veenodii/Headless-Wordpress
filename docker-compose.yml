@@ -93,8 +93,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.wordpress-nginx.rule=Host(`${FQDN}`)"
-      - "traefik.http.routers.wordpress-nginx.entrypoints=websecure"
-      - "traefik.http.routers.wordpress-nginx.tls=true"
+      - "traefik.http.routers.wordpress-nginx.entrypoints=web"
       - "traefik.http.services.wordpress-nginx.loadbalancer.server.port=80"
       - "traefik.http.routers.wordpress-nginx.middlewares=secure-headers@docker"
       - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.X-Frame-Options=SAMEORIGIN"
