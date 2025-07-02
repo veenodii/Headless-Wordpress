@@ -49,7 +49,7 @@ services:
       - internal
     volumes:
       - wp_data:/var/www/html      
-      - ./wordpress/conf/opcache.ini:/usr/local/etc/php/conf.d/opcache-custom.ini
+      - ./wordpress/conf/opcache.ini:/usr/local/etc/php/conf.d/opcache.ini
     environment:
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
