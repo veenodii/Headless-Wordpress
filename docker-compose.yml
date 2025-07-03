@@ -35,18 +35,23 @@ services:
       timeout: 5s
       retries: 3
 
-  # --- NEW SQUID PROXY SERVICE ---
   squid:
     image: ubuntu/squid
     container_name: squid_proxy
     restart: unless-stopped
     networks:
-      - internal          # Connects to WordPress
-      - dokploy-network   # Connects to the internet
+      - internal
+      - dokploy-network
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
     expose:
-      - "3128" # Exposes the proxy port to the internal network
+      - "3128"
+    healthcheck:
+      test: ["CMD", "squidclient", "-h", "127.0.0.1", "-p", "3128", "mgr:info"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   wordpress:
     build:
@@ -58,17 +63,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # Add dependency on the new squid service
       squid:
-        condition: service_started
+        condition: service_healthy
     networks:
-      - internal # It remains on the internal network only
+      - internal
     volumes:
       - wp_data:/var/www/html
     environment:
-     
       http_proxy: "http://squid:3128"
       https_proxy: "http://squid:3128"
+      # This corrected line adds the loopback domain to the bypass list.
       no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy,cms.studyfriendly.com"
       
       # Existing environment variables
@@ -85,10 +89,11 @@ services:
       WP_REDIS_READ_TIMEOUT: 1
       WP_REDIS_RETRY_INTERVAL: 3
     healthcheck:
-      test: ["CMD", "cgi-fcgi", "-bind", "-connect", "127.0.0.1:9000"]
+      test: ["CMD-SHELL", "wp core is-installed --path=/var/www/html || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 30s
 
   nginx:
     image: nginx:1.28-alpine
