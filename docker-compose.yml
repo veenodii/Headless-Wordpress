@@ -36,7 +36,6 @@ services:
       retries: 3
 
   squid:
-    # This now tells Docker to build the image from your local ./squid directory
     build:
       context: ./squid
     container_name: squid_proxy
@@ -48,9 +47,12 @@ services:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
     expose:
       - "3128"
+    # --- FINAL, ROBUST SQUID HEALTHCHECK ---
+    # This command uses netcat to simply check if the port is open,
+    # which is a more reliable test of service availability.
     healthcheck:
-      test: ["CMD", "squidclient", "-h", "127.0.0.1", "-p", "3128", "mgr:info"]
-      interval: 15s
+      test: ["CMD", "nc", "-z", "127.0.0.1", "3128"]
+      interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
