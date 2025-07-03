@@ -69,7 +69,7 @@ services:
      
       http_proxy: "http://squid:3128"
       https_proxy: "http://squid:3128"
-      no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy"
+      no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy,cms.studyfriendly.com"
       
       # Existing environment variables
       WORDPRESS_DB_HOST: mariadb
