@@ -35,6 +35,7 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freet
 # Install other essential extensions
 RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
 RUN docker-php-ext-enable opcache
+RUN php -m | grep -q -i opcache
 COPY conf/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 # Install imagick via PECL
