@@ -35,28 +35,6 @@ services:
       timeout: 5s
       retries: 3
 
-  squid:
-    build:
-      context: ./squid
-    container_name: squid_proxy
-    restart: unless-stopped
-    networks:
-      - internal
-      - dokploy-network
-    volumes:
-      - ./squid/squid.conf:/etc/squid/squid.conf:ro
-    expose:
-      - "3128"
-    # --- FINAL, ROBUST SQUID HEALTHCHECK ---
-    # This command simply checks if the main 'squid' process is running.
-    # It is more reliable than checking the port during initial startup.
-    healthcheck:
-      test: ["CMD", "pidof", "squid"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-
   wordpress:
     build:
       context: ./wordpress
@@ -67,16 +45,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      squid:
-        condition: service_healthy
     networks:
       - internal
     volumes:
       - wp_data:/var/www/html
     environment:
-      http_proxy: "http://squid:3128"
-      https_proxy: "http://squid:3128"
-      no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy,cms.studyfriendly.com"
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
