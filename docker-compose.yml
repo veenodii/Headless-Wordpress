@@ -48,14 +48,14 @@ services:
     expose:
       - "3128"
     # --- FINAL, ROBUST SQUID HEALTHCHECK ---
-    # This command uses netcat to simply check if the port is open,
-    # which is a more reliable test of service availability.
+    # This command simply checks if the main 'squid' process is running.
+    # It is more reliable than checking the port during initial startup.
     healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "3128"]
+      test: ["CMD", "pidof", "squid"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 15s
 
   wordpress:
     build:
