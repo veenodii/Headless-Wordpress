@@ -1,9 +1,9 @@
 # --- Stage 1: Builder ---
-# We use a temporary stage to compile our PHP extensions.
-# We start with the same base image to ensure compatibility.
+# We use a temporary "builder" stage to compile our PHP extensions. This ensures
+# that build tools like compilers are not included in the final production image.
 FROM wordpress:fpm-alpine AS builder
 
-# Switch to the root user to install packages.
+# Switch to the root user to get permissions to install packages.
 USER root
 
 # Install all system dependencies and build tools needed to compile the extensions.
@@ -25,7 +25,7 @@ RUN apk add --no-cache \
     make \
     pcre-dev
 
-# Configure and install the GD extension.
+# Configure and install the GD extension for image processing.
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
     && docker-php-ext-install -j$(nproc) gd
 
@@ -38,11 +38,11 @@ RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
 
 
 # --- Stage 2: Final Production Image ---
-# We start again from a clean base image.
+# We start again from a clean base image. This image contains the official
+# WordPress files and a working PHP-FPM setup.
 FROM wordpress:fpm-alpine
 
 # Set the working directory to the standard WordPress root.
-# All subsequent RUN, COPY, and CMD commands will execute from this path.
 WORKDIR /var/www/html
 
 # Switch to root to copy files and set permissions.
@@ -52,15 +52,17 @@ USER root
 # This is the magic of multi-stage builds.
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
-# Copy our custom configurations into the final image.
+# Install WP-CLI for easier management and cgi-fcgi for a reliable healthcheck.
+RUN apk add --no-cache mysql-client \
+    && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
+
+# Copy ALL of your custom configuration files into the final image.
+# This ensures all your settings for OPcache, uploads, and FPM are applied.
 COPY conf/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 COPY conf/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY conf/www.conf /usr/local/etc/php-fpm.d/www-custom.conf
-
-# Install WP-CLI for easier management.
-RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
-    && chmod +x wp-cli.phar \
-    && mv wp-cli.phar /usr/local/bin/wp
 
 # Ensure all configuration files have the correct ownership.
 RUN chown www-data:www-data /usr/local/etc/php/conf.d/*
