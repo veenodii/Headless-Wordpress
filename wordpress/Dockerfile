@@ -1,67 +1,69 @@
-FROM php:8.2-fpm-alpine3.21
+# --- Stage 1: Builder ---
+# We use a temporary stage to compile our PHP extensions.
+# We start with the same base image to ensure compatibility.
+FROM wordpress:fpm-alpine AS builder
 
-# Install dependencies for PHP extensions and system tools
+# Switch to the root user to install packages.
+USER root
+
+# Install all system dependencies and build tools needed to compile the extensions.
 RUN apk add --no-cache \
-    # System utils
     bash \
     curl \
     wget \
     unzip \
-    # Runtime libraries for GD
-    libjpeg-turbo \
-    libpng \
-    libwebp \
-    libavif \
-    freetype \
-    imagemagick \
-    # Build dependencies
+    zip \
+    git \
     libjpeg-turbo-dev \
     libpng-dev \
     libwebp-dev \
     libavif-dev \
     freetype-dev \
     imagemagick-dev \
-    # Build tools for PECL
     autoconf \
     g++ \
     make \
     pcre-dev
 
-# Configure and install PHP extensions
-# GD with JPEG, PNG, WebP, AVIF, and Freetype support
+# Configure and install the GD extension.
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
     && docker-php-ext-install -j$(nproc) gd
 
-# Install other essential extensions
+# Install the Imagick and Redis extensions using PECL.
+RUN pecl install imagick redis \
+    && docker-php-ext-enable imagick redis
+
+# Install other required PHP extensions, including OPcache.
 RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
-RUN docker-php-ext-enable opcache
-RUN php -m | grep -q -i opcache
+
+
+# --- Stage 2: Final Production Image ---
+# We start again from a clean base image.
+FROM wordpress:fpm-alpine
+
+# Set the working directory to the standard WordPress root.
+# All subsequent RUN, COPY, and CMD commands will execute from this path.
+WORKDIR /var/www/html
+
+# Switch to root to copy files and set permissions.
+USER root
+
+# Copy the compiled PHP extensions from our temporary builder stage.
+# This is the magic of multi-stage builds.
+COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
+
+# Copy our custom configurations into the final image.
 COPY conf/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY conf/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+COPY conf/www.conf /usr/local/etc/php-fpm.d/www-custom.conf
 
-# Install imagick via PECL
-RUN pecl install imagick \
-    && docker-php-ext-enable imagick
+# Install WP-CLI for easier management.
+RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
 
-# Install redis via PECL
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+# Ensure all configuration files have the correct ownership.
+RUN chown www-data:www-data /usr/local/etc/php/conf.d/*
 
-# Clean up build dependencies and dev libraries to reduce image size
-RUN apk del autoconf g++ make pcre-dev imagemagick-dev libjpeg-turbo-dev libpng-dev libwebp-dev libavif-dev freetype-dev && \
-    rm -rf /var/cache/apk/*
-
-RUN set -e; \
-  curl -o /tmp/wordpress.tar.gz -fSL "https://wordpress.org/latest.tar.gz" || { echo 'WordPress download failed'; exit 1; }; \
-  tar -xzf /tmp/wordpress.tar.gz -C /usr/src/ || { echo 'WordPress extract failed'; exit 1; }; \
-  rm /tmp/wordpress.tar.gz; \
-  curl -o /tmp/redis-cache.zip -fSL "https://downloads.wordpress.org/plugin/redis-cache.latest-stable.zip" || { echo 'Redis plugin download failed'; exit 1; }; \
-  unzip /tmp/redis-cache.zip -d /usr/src/wordpress/wp-content/plugins/ || { echo 'Redis plugin unzip failed'; exit 1; }; \
-  rm /tmp/redis-cache.zip
-  
-# Set up entrypoint to handle permissions and setup
-COPY --from=wordpress:latest /usr/local/bin/docker-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["docker-entrypoint.sh"]
-
-# Expose the PHP-FPM port
-EXPOSE 9000
-CMD ["php-fpm"]
+# Switch back to the default, non-privileged user to run the application.
+USER www-data
