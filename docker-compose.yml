@@ -66,9 +66,10 @@ services:
     volumes:
       - wp_data:/var/www/html
     environment:
-      # --- ADD THESE TWO LINES TO USE THE PROXY ---
+      # --- USE THESE PROXY ---
       http_proxy: "http://squid:3128"
       https_proxy: "http://squid:3128"
+      no_proxy: "localhost,127.0.0.1,mariadb,redis,nginx,wordpress_fpm"
       
       # Existing environment variables
       WORDPRESS_DB_HOST: mariadb
