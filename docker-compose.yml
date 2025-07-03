@@ -35,23 +35,18 @@ services:
       timeout: 5s
       retries: 3
 
+  # --- NEW SQUID PROXY SERVICE ---
   squid:
     image: ubuntu/squid
     container_name: squid_proxy
     restart: unless-stopped
     networks:
-      - internal
-      - dokploy-network
+      - internal          # Connects to WordPress
+      - dokploy-network   # Connects to the internet
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf:ro
     expose:
-      - "3128"
-    healthcheck:
-      test: ["CMD", "squidclient", "-h", "127.0.0.1", "-p", "3128", "mgr:info"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - "3128" # Exposes the proxy port to the internal network
 
   wordpress:
     build:
@@ -63,16 +58,17 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Add dependency on the new squid service
       squid:
-        condition: service_healthy
+        condition: service_started
     networks:
-      - internal
+      - internal # It remains on the internal network only
     volumes:
       - wp_data:/var/www/html
     environment:
+     
       http_proxy: "http://squid:3128"
       https_proxy: "http://squid:3128"
-           # Use the explicit container_name values to bypass the proxy for internal communication.
       no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy"
       
       # Existing environment variables
@@ -89,11 +85,10 @@ services:
       WP_REDIS_READ_TIMEOUT: 1
       WP_REDIS_RETRY_INTERVAL: 3
     healthcheck:
-      test: ["CMD-SHELL", "wp core is-installed --path=/var/www/html || exit 1"]
+      test: ["CMD", "cgi-fcgi", "-bind", "-connect", "127.0.0.1:9000"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
 
   nginx:
     image: nginx:1.28-alpine
