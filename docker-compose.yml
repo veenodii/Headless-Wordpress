@@ -36,7 +36,9 @@ services:
       retries: 3
 
   squid:
-    image: ubuntu/squid
+    # This now tells Docker to build the image from your local ./squid directory
+    build:
+      context: ./squid
     container_name: squid_proxy
     restart: unless-stopped
     networks:
@@ -72,10 +74,7 @@ services:
     environment:
       http_proxy: "http://squid:3128"
       https_proxy: "http://squid:3128"
-      # This corrected line adds the loopback domain to the bypass list.
       no_proxy: "localhost,127.0.0.1,wordpress_db,wordpress_redis,wordpress_nginx,squid_proxy,cms.studyfriendly.com"
-      
-      # Existing environment variables
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
