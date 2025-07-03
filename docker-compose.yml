@@ -35,6 +35,19 @@ services:
       timeout: 5s
       retries: 3
 
+  # --- NEW SQUID PROXY SERVICE ---
+  squid:
+    image: ubuntu/squid
+    container_name: squid_proxy
+    restart: unless-stopped
+    networks:
+      - internal          # Connects to WordPress
+      - dokploy-network   # Connects to the internet
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+    expose:
+      - "3128" # Exposes the proxy port to the internal network
+
   wordpress:
     build:
       context: ./wordpress
@@ -45,11 +58,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      # Add dependency on the new squid service
+      squid:
+        condition: service_started
     networks:
-      - internal
+      - internal # It remains on the internal network only
     volumes:
       - wp_data:/var/www/html
     environment:
+      # --- ADD THESE TWO LINES TO USE THE PROXY ---
+      http_proxy: "http://squid:3128"
+      https_proxy: "http://squid:3128"
+      
+      # Existing environment variables
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
       WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
@@ -62,10 +83,7 @@ services:
       WP_REDIS_TIMEOUT: 1
       WP_REDIS_READ_TIMEOUT: 1
       WP_REDIS_RETRY_INTERVAL: 3
-    expose:
-      - 9000
     healthcheck:
-      # This new command uses a tool to check if the PHP-FPM process is listening on its port.
       test: ["CMD", "cgi-fcgi", "-bind", "-connect", "127.0.0.1:9000"]
       interval: 30s
       timeout: 10s
@@ -83,7 +101,6 @@ services:
       internal:
         aliases:
           - cms.studyfriendly.com
-          
     volumes:
       - wp_data:/var/www/html:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -92,25 +109,17 @@ services:
     expose:
       - "80"
     labels:
-      # --- FINAL, CORRECTED LABELS ---
       - "traefik.enable=true"
-
-      # Define a router and explicitly link it to a service using the 'service' property
       - "traefik.http.routers.wordpress-router.rule=Host(`${FQDN}`)"
       - "traefik.http.routers.wordpress-router.entrypoints=websecure"
       - "traefik.http.routers.wordpress-router.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.wordpress-router.service=wordpress-service" # Explicitly link to the service below
-
-      # Define the service and tell Traefik where to forward the traffic
+      - "traefik.http.routers.wordpress-router.service=wordpress-service"
       - "traefik.http.services.wordpress-service.loadbalancer.server.port=80"
-
-      # Define and apply the security headers middleware
       - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.X-Frame-Options=SAMEORIGIN"
       - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.Referrer-Policy=no-referrer-when-downgrade"
       - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.Strict-Transport-Security=max-age=63072000; includeSubDomains; preload"
       - "traefik.http.routers.wordpress-router.middlewares=secure-headers@docker"
-
 
   clamav:
     image: clamav/clamav:1.3
