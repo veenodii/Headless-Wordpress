@@ -20,10 +20,8 @@ RUN apk add --no-cache \
     libavif-dev \
     freetype-dev \
     imagemagick-dev \
-    autoconf \
-    g++ \
-    make \
-    pcre-dev
+    pcre-dev \
+    $PHPIZE_DEPS
 
 # Configure and install the GD extension for image processing.
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
@@ -53,7 +51,7 @@ USER root
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
 # Install WP-CLI for easier management and other necessary runtime tools.
-RUN apk add --no-cache mysql-client fcgi imagick \
+RUN apk add --no-cache mysql-client fcgi imagemagick \
     && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
