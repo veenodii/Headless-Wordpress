@@ -68,7 +68,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s
 
   nginx:
     image: nginx:1.28-alpine
