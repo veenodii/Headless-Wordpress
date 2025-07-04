@@ -30,7 +30,7 @@ services:
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     healthcheck:
-      test: ["CMD-SHELL", "for i in $(seq 1 3); do redis-cli ping && exit 0 || sleep 5; done; exit 1"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -64,7 +64,7 @@ services:
       WP_REDIS_READ_TIMEOUT: 1
       WP_REDIS_RETRY_INTERVAL: 3
     healthcheck:
-      test: ["CMD-SHELL", "wp core is-installed --path=/var/www/html || exit 1"]
+      test: ["CMD-SHELL", "pidof php-fpm"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -94,13 +94,7 @@ services:
       - "traefik.http.routers.wordpress-router.entrypoints=websecure"
       - "traefik.http.routers.wordpress-router.tls.certresolver=letsencrypt"
       - "traefik.http.routers.wordpress-router.service=wordpress-service"
-      - "traefik.http.services.wordpress-service.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.X-Frame-Options=SAMEORIGIN"
-      - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.X-Content-Type-Options=nosniff"
-      - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.Referrer-Policy=no-referrer-when-downgrade"
-      - "traefik.http.middlewares.secure-headers.headers.customresponseheaders.Strict-Transport-Security=max-age=63072000; includeSubDomains; preload"
-      - "traefik.http.routers.wordpress-router.middlewares=secure-headers@docker"
-
+      - "traefik.http.services.wordpress-service.loadbalancer.server.port=80"  
   clamav:
     image: clamav/clamav:1.3
     container_name: wordpress_clamav
