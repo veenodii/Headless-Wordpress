@@ -47,6 +47,7 @@ services:
         condition: service_healthy
     networks:
       - internal
+      - dokploy-network
     volumes:
       - wp_data:/var/www/html
     environment:
