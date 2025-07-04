@@ -66,9 +66,11 @@ services:
       WP_REDIS_RETRY_INTERVAL: 3
     command: >
       sh -c "
-        if wp core is-installed --path=/var/www/html --allow-root; then
-          if wp plugin is-active redis-cache --path=/var/www/html --allow-root; then
-            wp redis enable --path=/var/www/html --allow-root
+        if [ -f /var/www/html/wp-content/plugins/redis-cache/includes/object-cache.php ]; then
+          if [ ! -f /var/www/html/wp-content/object-cache.php ]; then
+            echo 'Copying Redis object-cache.php drop-in...';
+            cp /var/www/html/wp-content/plugins/redis-cache/includes/object-cache.php /var/www/html/wp-content/object-cache.php;
+            chown www-data:www-data /var/www/html/wp-content/object-cache.php;
           fi
         fi;
         exec php-fpm
