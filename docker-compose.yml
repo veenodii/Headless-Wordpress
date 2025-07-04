@@ -66,15 +66,12 @@ services:
       WP_REDIS_RETRY_INTERVAL: 3
     command: >
       sh -c "
-        # Wait for the database to be ready before proceeding.
-        # Then, if WordPress is installed and the plugin is active, enable Redis.
-        if wp core is-installed --path=/var/www/html; then
-          if wp plugin is-active redis-cache --path=/var/www/html; then
-            wp redis enable --path=/var/www/html
+        if wp core is-installed --path=/var/www/html --allow-root; then
+          if wp plugin is-active redis-cache --path=/var/www/html --allow-root; then
+            wp redis enable --path=/var/www/html --allow-root
           fi
-        fi
-        # Finally, start the main PHP-FPM process.
-        && php-fpm
+        fi;
+        exec php-fpm
       "
     healthcheck:
       test: ["CMD-SHELL", "pidof php-fpm"]
