@@ -29,8 +29,11 @@ RUN apk add --no-cache \
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
     && docker-php-ext-install -j$(nproc) gd
 
+# --- THIS IS THE CORRECTED SECTION ---
 # Install the Imagick, Redis, and Relay extensions using PECL.
-# We install them in separate steps for better error isolation and layer caching.
+# We clear the cache first to prevent issues with stale or corrupted packages.
+# We install each extension in a separate step for better error isolation.
+RUN pecl clear-cache
 RUN pecl install imagick && docker-php-ext-enable imagick
 RUN pecl install redis && docker-php-ext-enable redis
 RUN pecl install relay && docker-php-ext-enable relay
