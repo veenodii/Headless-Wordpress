@@ -50,7 +50,6 @@ WORKDIR /var/www/html
 USER root
 
 # Copy the compiled PHP extensions from our temporary builder stage.
-# This is the magic of multi-stage builds.
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
 # Install WP-CLI for easier management and other necessary runtime tools.
