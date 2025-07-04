@@ -30,9 +30,10 @@ RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freet
     && docker-php-ext-install -j$(nproc) gd
 
 # Install the Imagick, Redis, and Relay extensions using PECL.
-# Relay depends on PhpRedis, and PECL handles this dependency.
-RUN pecl install imagick redis relay \
-    && docker-php-ext-enable imagick redis relay
+# We install them in separate steps for better error isolation and layer caching.
+RUN pecl install imagick && docker-php-ext-enable imagick
+RUN pecl install redis && docker-php-ext-enable redis
+RUN pecl install relay && docker-php-ext-enable relay
 
 # Install other required PHP extensions, including OPcache.
 RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
