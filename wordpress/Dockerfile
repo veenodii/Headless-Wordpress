@@ -50,6 +50,8 @@ USER root
 # Copy the compiled PHP extensions from our temporary builder stage.
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
+# Copy the compiled PHP extensions from our temporary builder stage.
+COPY --from=builder /usr/local/etc/php/conf.d/ /usr/local/etc/php/conf.d/
 # Install WP-CLI for easier management and other necessary runtime tools.
 RUN apk add --no-cache mysql-client fcgi \
     && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
