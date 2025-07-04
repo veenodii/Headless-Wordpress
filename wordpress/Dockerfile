@@ -29,9 +29,10 @@ RUN apk add --no-cache \
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
     && docker-php-ext-install -j$(nproc) gd
 
-# Install the Imagick and Redis extensions using PECL.
-RUN pecl install imagick redis \
-    && docker-php-ext-enable imagick redis
+# Install the Imagick, Redis, and Relay extensions using PECL.
+# Relay depends on PhpRedis, and PECL handles this dependency.
+RUN pecl install imagick redis relay \
+    && docker-php-ext-enable imagick redis relay
 
 # Install other required PHP extensions, including OPcache.
 RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
@@ -52,7 +53,7 @@ USER root
 # This is the magic of multi-stage builds.
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
-# Install WP-CLI for easier management and fcgi for a reliable healthcheck.
+# Install WP-CLI for easier management and other necessary runtime tools.
 RUN apk add --no-cache mysql-client fcgi \
     && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x wp-cli.phar \
