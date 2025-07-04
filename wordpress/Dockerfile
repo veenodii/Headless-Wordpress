@@ -6,11 +6,8 @@ FROM wordpress:fpm-alpine AS builder
 # Switch to the root user to get permissions to install packages.
 USER root
 
-# Step 1: Install all system dependencies needed for PHP extensions.
-# We use the official $PHPIZE_DEPS variable which includes php-dev, php-pear, g++, make, etc.
-# We also add the specific -dev libraries required by our extensions.
+# Install all system dependencies and build tools needed to compile the extensions.
 RUN apk add --no-cache \
-    $PHPIZE_DEPS \
     bash \
     curl \
     wget \
@@ -23,20 +20,21 @@ RUN apk add --no-cache \
     libavif-dev \
     freetype-dev \
     imagemagick-dev \
-    lz4-dev \
-    zstd-dev
+    autoconf \
+    g++ \
+    make \
+    pcre-dev
 
-# Step 2: Configure and install the GD extension for image processing.
+# Configure and install the GD extension for image processing.
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-avif --with-freetype \
     && docker-php-ext-install -j$(nproc) gd
 
-# Step 3: Install Imagick, PhpRedis, and Relay using PECL.
-# Each is installed in a separate step for reliability and better layer caching.
-RUN pecl install redis && docker-php-ext-enable redis
-RUN pecl install relay && docker-php-ext-enable relay
-RUN pecl install imagick && docker-php-ext-enable imagick
+# Install the Imagick, Redis, and Relay extensions using PECL.
+# Relay depends on PhpRedis, and PECL handles this dependency.
+RUN pecl install imagick redis \
+    && docker-php-ext-enable imagick redis
 
-# Step 4: Install other required PHP extensions, including OPcache.
+# Install other required PHP extensions, including OPcache.
 RUN docker-php-ext-install -j$(nproc) mysqli opcache bcmath exif
 
 
