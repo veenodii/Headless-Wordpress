@@ -51,7 +51,7 @@ USER root
 COPY --from=builder /usr/local/lib/php/extensions/ /usr/local/lib/php/extensions/
 
 # Install WP-CLI for easier management and other necessary runtime tools.
-RUN apk add --no-cache mysql-client fcgi imagemagick \
+RUN apk add --no-cache mysql-client fcgi \
     && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
