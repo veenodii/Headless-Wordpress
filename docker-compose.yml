@@ -64,7 +64,7 @@ services:
       WP_REDIS_READ_TIMEOUT: 1
       WP_REDIS_RETRY_INTERVAL: 3
     healthcheck:
-      test: ["CMD", "php-fpm-healthcheck"]
+      test: ["CMD-SHELL", "wp core is-installed --path=/var/www/html || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
