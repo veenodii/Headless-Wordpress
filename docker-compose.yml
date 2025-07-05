@@ -50,6 +50,9 @@ services:
       - dokploy-network
     volumes:
       - wp_data:/var/www/html
+
+    extra_hosts:
+      - "cms.studyfriendly.com:host-gateway"
     environment:
       WORDPRESS_DB_HOST: mariadb
       WORDPRESS_DB_USER: ${MYSQL_USER}
@@ -91,8 +94,6 @@ services:
     networks:
       dokploy-network: {}
       internal:
-        aliases:
-          - cms.studyfriendly.com
     volumes:
       - wp_data:/var/www/html:ro
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
